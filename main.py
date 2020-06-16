@@ -1,76 +1,101 @@
-# import os library to generate a path to our csv file
-# import csv library to read our csv file
-import os
-import csv
+import os # import os library to generate the path to our csv file
+import csv # import csv module to read our csv file
 
-# create new variable "csv_path" and assign it to path module "os.path.join" to read csv file in Resource folder
-csv_path = os.path.join('Resources', 'budget_data.csv')
+# create/initizlize new variable "election_path"
+# assign variable to path module "os.path.join" to read csv file in Resource folder
+election_path = os.path.join('Resources', 'election_data.csv')
+# create/ initialized new variable "poll_analysis" to hold results of election analysis
+poll_analysis = os.path.join('Analysis', 'election_analysis.txt')
 
-# Track various financial parameters
-total_months = 0
-month_of_change = []
-net_change_list = []
-greatest_increase = ["", 0]
-greatest_decrease = ["", 9999999999999999999]
-total_net = 0
 
-# begin by opening csv file in a iterabable format, like a dictionary where objects can be looped
-# use Python 'with' command and 'open()' function; ("filename" (csv_path),"mode" (newline= " ")) 
-# the argument "newline="" is set to empty quotes in order for loop to reiterate from one row to the next 
-# keep block of code within its scope of with command; make sure to indent subsequent code
-with open(csv_path, newline="") as financial_data:
-    reader = csv.reader(financial_data)
-    # Read the header row
+# create/initialize empty variables to track polling analysis
+total_votes = 0 # integer for votes
+can_list = [] # list of candidate names
+can_votes = {} # dict - key=candidate name: values=votes
+winner = '' # string for winner's name
+winning_count = 0 # integer for winner's vote count
+
+# create a scope to read and analyze csv
+# open csv file and read each rows, 3 columns and 3521001 rows
+with open(election_path) as election_data:
+    # create reader object, to view rows and call values by index number
+    # if csv had numerous columns,best to use dictionary type = key: column names/ values:columns     
+    reader = csv.reader(election_data)
+        # Read the header and skip to next row/line
     header = next(reader)
 
-    # Extract first row to avoid appending to net_change_list
-    first_row = next(reader)
-    total_months = total_months + 1
-    total_net = total_net + int(first_row[1])
-    prev_net = int(first_row[1])
-
+        #first_row = next(reader)
+        # create a loop for each row in the reader
+        # calculate the following...
     for row in reader:
+        
+                #run animation 
+        print ('. ', end='')
+        
+        # after each row (vote in this case), add 1 vote to the total vote count
+        total_votes = total_votes + 1
+        # select candidate name from each row (index 2)
+        can_name = row[-1]
+            
+        # conditional logic - if
+        # in the event the candidate's name does not match existing candidate's name 
+        if can_name not in can_list:
+            # add/append a new list with new candidate's name
+            can_list.append(can_name)
+            # track new candidate's voter count
+            can_votes[can_name] = 0
+        # and add one vote to that candidate's count    
+        #increment vote count by 1 to that candidate's count
+        can_votes[can_name] = can_votes[can_name] + 1
+        
+# print the results and export the data to our text file 'poll_analysis'
+# create a new scope to read and write 'w' analysis
+with open(poll_analysis, 'w') as txt_file:
 
-        # Track the total
-        total_months = total_months + 1
-        total_net = total_net + int(row[1])
+    # use format strings "f'Text type: {variable}" to print final election results (to terminal)
+        election_results = (
+            f'\n\nElection Results\n'
+            f'-------------------------\n'
+            f'Total Votes: {total_votes}\n'
+            f'-------------------------\n'
+            )
+        print(election_results, end='')
+    
+        # save the final vote count to the text file 'poll_anylysis'
+        txt_file.write(election_results)
 
-        # Track the net change
-        net_change = int(row[1]) - prev_net
-        prev_net = int(row[1])
-        net_change_list = net_change_list + [net_change]
-        month_of_change = month_of_change + [row[0]]
+        # create a loop for each row to determine the winner
+        for candidate in can_votes:
 
-        # Calculate the greatest increase
-        if net_change > greatest_increase[1]:
-            greatest_increase[0] = row[0]
-            greatest_increase[1] = net_change
+            # retrieve vote count and percentage
+            # use .get method
+            votes = can_votes.get(candidate)
+            # convert votes into a percentage, use float so number is not rounded but given decimal values
+            vote_percentage = float(votes) / float(total_votes) * 100
 
-        # Calculate the greatest decrease
-        if net_change < greatest_decrease[1]:
-            greatest_decrease[0] = row[0]
-            greatest_decrease[1] = net_change
+            # determine winning vote count and candidate
+            # conditional logic - if
+            # if the current # of votes is more than the winning count
+            if (votes > winning_count):
+                winning_count = votes
+                winner= candidate
 
-# Calculate the Average Net Change
-net_monthly_avg = sum(net_change_list) / len(net_change_list)
- 
-# to process analysis, create "output" variable to equal an object
-# object is formatted with f'strings to create a legible result
-# reset block scope
-output = (
-    f"\nFinancial Analysis\n"
-    f"----------------------------\n"
-    f"Total Months: {total_months}\n"
-    f"Total: ${total_net}\n"
-    f"Average  Change: ${net_monthly_avg:.2f}\n"
-    f"Greatest Increase in Profits: {greatest_increase[0]} (${greatest_increase[1]})\n"
-    f"Greatest Decrease in Profits: {greatest_decrease[0]} (${greatest_decrease[1]})\n")
+                # print each candidate's voter count and percentage (to terminal)
+                # use f'strings to print text, .3f is for 3 decimal points spacing
+            voter_output = f'{candidate}: {vote_percentage:.3f}% ({votes})\n'
+            print(voter_output)
 
-# preview output
-print(output)
+            # Save each candidate's voter count and percentage to text file
+            txt_file.write(voter_output)
 
-# create text file to export results, create file path to folder
-analysis_outcome = os.path.join('Resources', 'budget_analysis.txt') 
- # write to file but need an argument to enter in next file, set as its own variable (output - f'string format)
-with open(analysis_outcome, 'w') as txt_file:
-    txt_file.write(output) #write is now a method, pass an object/ argument 
+        # print the winning candidate (to terminal)
+        # use f'string to print text
+        winning_candidate_summary = (
+            f'-------------------------\n'
+            f'Winner: {winner}\n'
+            f'-------------------------\n'
+        )
+        print(winning_candidate_summary)
+
+        # Save the winning candidate's name to the text file
+        txt_file.write(winning_candidate_summary)
